@@ -17,7 +17,7 @@ RUN dotnet build
 RUN dotnet publish -o ./out -c Release
 COPY ps.ps1 /
 
-FROM mcr.microsoft.com/dotnet/runtime:3.1 
+FROM mcr.microsoft.com/dotnet/aspnet:3.1 
 WORKDIR /app
 
 COPY --from=allbuilds /app/out .

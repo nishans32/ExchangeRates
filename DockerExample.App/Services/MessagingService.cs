@@ -1,15 +1,9 @@
-namespace DockerExample.App.Services
-{
-    public class MessagingService
-    {
-        public MessagingService()
-        {
-            
-        }
+using System;
 
-        public string GetMessage()
-        {
-            return "Hello World";
-        }
+public class MessagingService
+{
+    public string GetMessage()
+    {
+        return "Hello World";
     }
 }

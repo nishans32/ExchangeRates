@@ -1,6 +1,6 @@
 using System;
 using Xunit;
-using DockerExample.App.Services;
+using DockerExample.App;
 
 namespace DockerExample.Test
 {
