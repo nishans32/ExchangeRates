@@ -3,23 +3,41 @@ using System.Threading.Tasks;
 
 public interface IExchangeRateProcessingService
 {
-    Task Process();     
+    Task Process();
 }
 
 public class ExchangeRateProcessingService : IExchangeRateProcessingService
 {
-    public ExchangeRateProcessingService(IEx)
+    private readonly IExchangeRateCacheService _cacheService;
+    private readonly IEventNotificationService _notificationService;
+    private readonly IExchangeRateServiceClient _serviceClient;
+    private readonly IExchangeRateDataService _dataService ;
+
+
+    public ExchangeRateProcessingService(IExchangeRateDataService dataService, IExchangeRateCacheService cacheService, IEventNotificationService notificationService, IExchangeRateServiceClient serviceClient)
     {
+        dataService = dataService;
+        _cacheService = cacheService;
+        _notificationService = notificationService;
+        _serviceClient = serviceClient;
     }
 
     public async Task Process()
     {
-        var rates = _exchangeRateClientService.GetRates();
+        var rates = _serviceClient.GetRates();
+        var changedRates = _dataService.GetChangedRates(rates);
+
+        if(changedRates == null)
+        {
+            _dataService.SaveLastUpdatedTime(rates);
+            return;
+        }
+
         var tasks = new List<Task>
         {
-            _repo.SaveRateEvents(rates),
-            _cacheService.AddToCache(rates),
-            _notificationService.Notify(rates),
+            _dataService.SaveNewRates(changedRates),
+            _cacheService.AddToCache(changedRates),
+            _notificationService.Notify(changedRates),
         };
 
         await Task.WhenAll(tasks);
