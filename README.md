@@ -1,6 +1,8 @@
-# Dotnet.Docker
-This is a simple dotnet docker example. 
+# Exchange Rates Service
 
-The solution consists of a simple web api and a test. The idea is to eventually execute the tests seperately
+This is a collection of apps that constitutes the exchange rates microservice where 
+1. Exchange rates are polled from reliable sources
+2. Persisted and served through an api 
+3. made available via events
 
-Note: when running in WSL2 : **docker run -p 5000:80 -it hello-world --bind 0.0.0.0**
+<img src="https://media.wired.com/photos/5926db217034dc5f91becd6b/master/w_582,c_limit/so-logo-s.jpg" width="250">
