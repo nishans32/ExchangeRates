@@ -5,5 +5,5 @@ using System.Text.Json.Serialization;
 public class ExchangeRatesDto
 {
     [JsonPropertyName("rates")]
-    public Dictionary<string, double> Rates { get; set; }
+    public Dictionary<string, decimal> Rates { get; set; }
 }

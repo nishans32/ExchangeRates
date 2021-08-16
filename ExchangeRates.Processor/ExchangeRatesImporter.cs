@@ -1,6 +1,7 @@
 using ExchangeRates.Processor.Services;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 public interface IExchangeRateImporter
@@ -29,7 +30,7 @@ public class ExchangeRateImporter : IExchangeRateImporter
         var rates = await _serviceClient.GetRates();
         var changedRates = await _dataService.GetChangedRates(rates);
 
-        if(changedRates == null)
+        if(!changedRates.Any())
         {
             await _dataService.SaveLastUpdatedDate(rates);
             return;

@@ -4,7 +4,8 @@ using Microsoft.Extensions.DependencyInjection;
 using ExchangeRates.Processor.Services;
 using Microsoft.Extensions.Configuration;
 using ExchangeRates.Processor.Lib;
-
+using ExchangeRates.Processor.Repos;
+using ExchangeRates.Processor.Mappers;
 
 namespace ExchangeRates.Processor
 {
@@ -27,11 +28,17 @@ namespace ExchangeRates.Processor
                     services.AddTransient<IHttpClientService, HttpClientService>();
                     services.AddTransient<IJsonSerializer, JsonSerializerService>();
 
+                    services.AddTransient<IExchangeRatesRepo, ExchangeRatesRepo>();
+
+                    services.AddTransient<IExchangeRatesMapper, ExchangeRatesMapper>();
+
                     services.AddTransient<IExchangeRateImporter, ExchangeRateImporter>();
                     services.AddTransient<IExchangeRateDataService, ExchangeRateDataService>();
                     services.AddTransient<IExchangeRateCacheService, ExchangeRateCacheService>();
                     services.AddTransient<IExchangeRateServiceClient, ExchangeRateServiceClient>();
                     services.AddTransient<IEventNotificationService, EventNotificationService>();
+
+
 
                     var serviceProvider = services.BuildServiceProvider();
                     serviceProvider.GetRequiredService<IExchangeRateImporter>().Process();
