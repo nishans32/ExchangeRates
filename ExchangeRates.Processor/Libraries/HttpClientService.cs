@@ -2,7 +2,7 @@
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace ExchangeRates.Processor.Lib
+namespace ExchangeRates.Importer.Lib
 {
     public interface IHttpClientService
     {

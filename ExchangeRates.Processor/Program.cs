@@ -1,13 +1,14 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
-using ExchangeRates.Processor.Services;
+using ExchangeRates.Importer.Services;
 using Microsoft.Extensions.Configuration;
-using ExchangeRates.Processor.Lib;
-using ExchangeRates.Processor.Repos;
-using ExchangeRates.Processor.Mappers;
+using ExchangeRates.Importer.Lib;
+using ExchangeRates.Importer.Repos;
+using ExchangeRates.Importer.Mappers;
+using System;
 
-namespace ExchangeRates.Processor
+namespace ExchangeRates.Importer
 {
     class Program
     {
@@ -27,7 +28,9 @@ namespace ExchangeRates.Processor
                     services.AddHttpClient<IHttpClientService, HttpClientService>();
                     services.AddTransient<IHttpClientService, HttpClientService>();
                     services.AddTransient<IJsonSerializer, JsonSerializerService>();
-
+                    Console.WriteLine($"Conn str: {context.Configuration.GetSection("ConnectionStrings")}");
+                    services.Configure<ConnectionStrings>(context.Configuration.GetSection("ConnectionStrings"));
+                    services.AddTransient<IDBConnectionProvider, PGDBConnectionProvider>();
                     services.AddTransient<IExchangeRatesRepo, ExchangeRatesRepo>();
 
                     services.AddTransient<IExchangeRatesMapper, ExchangeRatesMapper>();

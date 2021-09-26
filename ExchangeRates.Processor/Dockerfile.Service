@@ -1,7 +1,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:3.1 as build 
 WORKDIR /app
 
-COPY ./ExchangeRates.Processor.csproj ./
+COPY ./ExchangeRates.Importer.csproj ./
 RUN dotnet restore
 
 COPY ./ ./
@@ -11,5 +11,14 @@ FROM mcr.microsoft.com/dotnet/runtime:3.1 as runtime
 WORKDIR /app
 
 COPY --from=build /app/out .
-ENTRYPOINT ["dotnet","ExchangeRates.Processor.dll"]
+
+RUN apt-get update -qq && apt-get -y install cron -qq --force-yes
+ADD ./script.sh script.sh
+RUN chmod 755 script.sh 
+
+RUN echo "* * * * * /app/script.sh > /dev/stdout" > crontab.txt
+#RUN echo "* * * * * /app/script.sh > /dev/stdout" > crontab.txt
+RUN /usr/bin/crontab crontab.txt
+ENTRYPOINT ["/usr/sbin/cron", "-f"]
+
 

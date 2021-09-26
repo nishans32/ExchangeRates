@@ -1,12 +1,15 @@
-﻿using ExchangeRates.Processor.Models;
+﻿using ExchangeRates.Importer.Models;
 using System.Collections.Generic;
 using System.Linq;
+using System;
 
-namespace ExchangeRates.Processor.Mappers
+namespace ExchangeRates.Importer.Mappers
 {
     public interface IExchangeRatesMapper
     {
-        IEnumerable<ExchangeRate> MapRatesToModel(ExchangeRatesDto newRates);
+        IEnumerable<ExchangeRate> MapToExchangeRate(ExchangeRatesDto newRates);
+        IEnumerable<ExchangeRateEvent> MapToExchangeRateEvent(ExchangeRatesDto newRates);
+
     }
 
     /// <summary>
@@ -14,9 +17,29 @@ namespace ExchangeRates.Processor.Mappers
     /// </summary>
     public class ExchangeRatesMapper : IExchangeRatesMapper
     {
-        public IEnumerable<ExchangeRate> MapRatesToModel(ExchangeRatesDto newRates)
+        public IEnumerable<ExchangeRate> MapToExchangeRate(ExchangeRatesDto newRates)
         {
-            return newRates.Rates.Select(rate => new ExchangeRate { Code = rate.Key, Value = rate.Value });
+            var batchId = Guid.NewGuid();
+            return newRates.Rates.Select(rate => new ExchangeRate 
+            { 
+                Code = rate.Key, 
+                Value = rate.Value, 
+                LastUpdatedUtc = DateTime.UtcNow, 
+                Id = Guid.NewGuid()
+            });
+        }
+
+        public IEnumerable<ExchangeRateEvent> MapToExchangeRateEvent(ExchangeRatesDto newRates)
+        {
+            var batchId = Guid.NewGuid();
+            return newRates.Rates.Select(rate => new ExchangeRateEvent
+            {
+                BatchId = batchId,
+                Code = rate.Key,
+                Value = rate.Value,
+                LastUpdatedUtc = DateTime.UtcNow,
+                Id = Guid.NewGuid()
+            });
         }
     }
 }

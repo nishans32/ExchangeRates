@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
 
-namespace ExchangeRates.Processor.Lib
+namespace ExchangeRates.Importer.Lib
 {
     public interface IJsonSerializer
     {

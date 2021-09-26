@@ -10,9 +10,9 @@ namespace ExchangeRates.Processor.Services
 {
     public interface IExchangeRateDataService
     {
-        Task<IEnumerable<ExchangeRate>> GetChangedRates(ExchangeRatesDto rates);
-        Task SaveLastUpdatedDate(object rates);
-        Task SaveNewRates(object changedRates);
+        Task<ChangedRates> GetRatesChangedComparedToMaterializedView(ExchangeRatesDto rates);
+        Task UpdateMaterializedView(ChangedRates changedRates);
+        Task SaveExchnageRatePollEvent(ExchangeRatesDto rates);
     }
 
     public class ExchangeRateDataService : IExchangeRateDataService
@@ -26,50 +26,75 @@ namespace ExchangeRates.Processor.Services
             _mapper = mapper;
         }
 
-        public async Task<IEnumerable<ExchangeRate>> GetChangedRates(ExchangeRatesDto newRates)
+        public async Task<ChangedRates> GetRatesChangedComparedToMaterializedView(ExchangeRatesDto newRatesDto)
         {
-            var newMappedRates = _mapper.MapRatesToModel(newRates);
+            var newRates = _mapper.MapToExchangeRate(newRatesDto);
             var currentRates = await _repo.GetRates();
 
-            return CompareRates(currentRates, newMappedRates);
+            var addedRates = GetAddedRates(currentRates, newRates);
+            var updatedRates = GetUpdatedRates(currentRates, newRates);
+            var deletedRates = GetDeletedRates(currentRates, newRates);
+
+            return new ChangedRates
+            {
+                AddedRates = addedRates,
+                UpdatedRates = updatedRates,
+                DeletedRates = deletedRates
+            };
         }
 
-
-        public Task SaveLastUpdatedDate(object rates)
+        public IEnumerable<ExchangeRate> GetDeletedRates(IEnumerable<ExchangeRate> currentRates, IEnumerable<ExchangeRate> newRates)
         {
-            throw new NotImplementedException();
+            return currentRates.Where(newRate => !newRates.Any(currentRate => newRate.Code == currentRate.Code));
         }
 
-        public Task SaveNewRates(object changedRates)
+        public IEnumerable<ExchangeRate> GetAddedRates(IEnumerable<ExchangeRate> currentRates, IEnumerable<ExchangeRate> newRates)
         {
-            throw new NotImplementedException();
+            return newRates.Where(newRate => !currentRates.Any(currentRate => newRate.Code == currentRate.Code));
         }
 
-        /// <summary>
-        /// Compares the two different lists of exchange rates and returns ones changed from the current list. 
-        /// Probably needs to be pulled out and maybe use an IEquilityComaprer approach
-        /// </summary>
-        /// <param name="currentRates"></param>
-        /// <param name="newRates"></param>
-        /// <returns></returns>
-        private IEnumerable<ExchangeRate> CompareRates(IEnumerable<ExchangeRate> currentRates, IEnumerable<ExchangeRate> newRates )
+        private IEnumerable<ExchangeRate> GetUpdatedRates(IEnumerable<ExchangeRate> currentRates, IEnumerable<ExchangeRate> newRates)
         {
             if (!currentRates.Any())
-                return newRates;
+                return new List<ExchangeRate>();
 
             var changedRates = new List<ExchangeRate>();
             var currentRateDict = currentRates.ToDictionary(x => x.Code.ToLower(), x => x.Value);
-            
+
             foreach (var newRate in newRates)
             {
                 var rateFound = currentRateDict.TryGetValue(newRate.Code.ToLower(), out var currentRate);
-                if (!rateFound || currentRate != newRate.Value)
+                if (rateFound && currentRate != newRate.Value)
                 {
                     changedRates.Add(newRate);
                 }
             }
 
             return changedRates;
+        }
+
+        /// <summary>
+        /// Save the batch with an updated date
+        /// </summary>
+        /// <param name="rates"></param>
+        /// <returns></returns>
+        public async Task SaveExchnageRatePollEvent(ExchangeRatesDto rates)
+        {
+            var ratesToSave = _mapper.MapToExchangeRateEvent(rates);
+            await _repo.SaveExchangeRateEvents(ratesToSave);
+
+        }
+
+        public async Task UpdateMaterializedView(ChangedRates changedRates)
+        {
+            if(changedRates.AddedRates.Any())
+                await _repo.AddNewRates(changedRates.AddedRates);
+
+            if (changedRates.UpdatedRates.Any())
+                await _repo.UpdateRates(changedRates.UpdatedRates);
+
+            if(changedRates.DeletedRates.Any())
+            await _repo.DeleteRates(changedRates.DeletedRates);
         }
     }
 }

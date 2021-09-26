@@ -1,4 +1,4 @@
-using ExchangeRates.Processor.Services;
+using ExchangeRates.Importer.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,37 +13,45 @@ public class ExchangeRateImporter : IExchangeRateImporter
 {
     private readonly IExchangeRateCacheService _cacheService;
     private readonly IEventNotificationService _notificationService;
-    private readonly IExchangeRateServiceClient _serviceClient;
+    private readonly IExchangeRateServiceClient _exchangeRateserviceClient;
     private readonly IExchangeRateDataService _dataService ;
 
-
-    public ExchangeRateImporter(IExchangeRateDataService dataService, IExchangeRateCacheService cacheService, IEventNotificationService notificationService, IExchangeRateServiceClient serviceClient)
+    public ExchangeRateImporter(IExchangeRateDataService dataService, IExchangeRateCacheService cacheService, IEventNotificationService notificationService, IExchangeRateServiceClient exchangeRateserviceClient)
     {
         _dataService = dataService;
         _cacheService = cacheService;
         _notificationService = notificationService;
-        _serviceClient = serviceClient;
+        _exchangeRateserviceClient = exchangeRateserviceClient;
     }
 
     public async Task Process()
     {
-        var rates = await _serviceClient.GetRates();
-        var changedRates = await _dataService.GetChangedRates(rates);
-
-        if(!changedRates.Any())
+        try
         {
-            await _dataService.SaveLastUpdatedDate(rates);
-            return;
+            Console.WriteLine($"Start Importing.....");
+            var rates = await _exchangeRateserviceClient.GetRates();
+
+            await _dataService.SaveExchnageRatePollEvent(rates);
+
+            var changedRates = await _dataService.GetRatesChangedComparedToMaterializedView(rates);
+            if (!changedRates.DeletedRates.Any() && !changedRates.UpdatedRates.Any() && !changedRates.AddedRates.Any())
+            {
+                return;
+            }
+
+            var tasks = new List<Task>
+            {
+                _dataService.UpdateMaterializedView(changedRates),
+                //_cacheService.AddToCache(changedRates),
+                //_notificationService.Notify(changedRates),
+            };
+            await Task.WhenAll(tasks);
         }
-
-        var tasks = new List<Task>
+        catch (Exception e)
         {
-            _dataService.SaveNewRates(changedRates),
-            _cacheService.AddToCache(changedRates),
-            _notificationService.Notify(changedRates),
-        };
-
-        await Task.WhenAll(tasks);
+            Console.WriteLine($"Error:  { e.Message }");
+            Console.WriteLine($"Error:  { e.StackTrace }");
+        }
     }
 }
 
