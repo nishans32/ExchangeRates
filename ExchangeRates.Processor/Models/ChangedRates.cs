@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace ExchangeRates.Importer.Models
+namespace ExchangeRates.Processor.Models
 {
     public class ChangedRates
     {

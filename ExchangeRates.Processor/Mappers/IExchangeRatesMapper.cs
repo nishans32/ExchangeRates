@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System;
 
-namespace ExchangeRates.Importer.Mappers
+namespace ExchangeRates.Processor.Mappers
 {
     public interface IExchangeRatesMapper
     {
