@@ -7,6 +7,7 @@ using ExchangeRates.Processor.Lib;
 using ExchangeRates.Importer.Repos;
 using ExchangeRates.Processor.Mappers;
 using System;
+using ExchangeRates.Common.Repos;
 
 namespace ExchangeRates.Importer
 {
