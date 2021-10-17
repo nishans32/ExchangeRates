@@ -1,3 +1,3 @@
 ﻿#!/bin/sh
 echo "test"
-/app/ExchangeRates.Importer
+/app/ExchangeRates.Processor
