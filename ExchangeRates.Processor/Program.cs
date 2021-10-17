@@ -1,11 +1,11 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
-using ExchangeRates.Importer.Services;
+using ExchangeRates.Processor.Services;
 using Microsoft.Extensions.Configuration;
-using ExchangeRates.Importer.Lib;
+using ExchangeRates.Processor.Lib;
 using ExchangeRates.Importer.Repos;
-using ExchangeRates.Importer.Mappers;
+using ExchangeRates.Processor.Mappers;
 using System;
 
 namespace ExchangeRates.Importer
@@ -35,16 +35,16 @@ namespace ExchangeRates.Importer
 
                     services.AddTransient<IExchangeRatesMapper, ExchangeRatesMapper>();
 
-                    services.AddTransient<IExchangeRateImporter, ExchangeRateImporter>();
+                    services.AddTransient<IExchangeRateProcessor, ExchangeRateProcessor>();
                     services.AddTransient<IExchangeRateDataService, ExchangeRateDataService>();
                     services.AddTransient<IExchangeRateCacheService, ExchangeRateCacheService>();
                     services.AddTransient<IExchangeRateServiceClient, ExchangeRateServiceClient>();
                     services.AddTransient<IEventNotificationService, EventNotificationService>();
 
-
+                    services.AddTransient<IRatesImporter, RatesImporter>();
 
                     var serviceProvider = services.BuildServiceProvider();
-                    serviceProvider.GetRequiredService<IExchangeRateImporter>().Process();
+                    serviceProvider.GetRequiredService<IExchangeRateProcessor>().Process();
                 });
 
             await host.RunConsoleAsync();
