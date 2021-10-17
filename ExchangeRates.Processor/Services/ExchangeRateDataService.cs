@@ -1,18 +1,19 @@
 using ExchangeRates.Processor.Mappers;
-using ExchangeRates.Processor.Models;
-using ExchangeRates.Processor.Repos;
+using ExchangeRates.Common.Models;
+using ExchangeRates.Common.Repos;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using ExchangeRates.Processor.Models;
 
 namespace ExchangeRates.Processor.Services
 {
     public interface IExchangeRateDataService
     {
-        Task<ChangedRates> GetRatesChangedComparedToMaterializedView(ExchangeRatesDto rates);
-        Task UpdateMaterializedView(ChangedRates changedRates);
-        Task SaveExchnageRatePollEvent(ExchangeRatesDto rates);
+        Task<ChangedRates> GetChangedExchangeRates(IEnumerable<ExchangeRate> rates);
+        Task UpdateExchangeRates(ChangedRates changedRates);
+        Task SaveExchangeRatePollEvent(ExchangeRateBatch rates);
     }
 
     public class ExchangeRateDataService : IExchangeRateDataService
@@ -26,47 +27,41 @@ namespace ExchangeRates.Processor.Services
             _mapper = mapper;
         }
 
-        public async Task<ChangedRates> GetRatesChangedComparedToMaterializedView(ExchangeRatesDto newRatesDto)
+        public async Task<ChangedRates> GetChangedExchangeRates(IEnumerable<ExchangeRate> newRates)
         {
-            var newRates = _mapper.MapToExchangeRate(newRatesDto);
             var currentRates = await _repo.GetRates();
 
             var addedRates = GetAddedRates(currentRates, newRates);
             var updatedRates = GetUpdatedRates(currentRates, newRates);
             var deletedRates = GetDeletedRates(currentRates, newRates);
 
-            return new ChangedRates
-            {
-                AddedRates = addedRates,
-                UpdatedRates = updatedRates,
-                DeletedRates = deletedRates
-            };
+            return _mapper.MapChangedRates(addedRates, updatedRates, deletedRates);
         }
 
-        public IEnumerable<ExchangeRate> GetDeletedRates(IEnumerable<ExchangeRate> currentRates, IEnumerable<ExchangeRate> newRates)
+        private IEnumerable<ExchangeRate> GetDeletedRates(IEnumerable<ExchangeRate> currentRates, IEnumerable<ExchangeRate> newRates)
         {
             return currentRates.Where(newRate => !newRates.Any(currentRate => newRate.Code == currentRate.Code));
         }
 
-        public IEnumerable<ExchangeRate> GetAddedRates(IEnumerable<ExchangeRate> currentRates, IEnumerable<ExchangeRate> newRates)
+        private IEnumerable<ExchangeRate> GetAddedRates(IEnumerable<ExchangeRate> currentRates, IEnumerable<ExchangeRate> newRates)
         {
             return newRates.Where(newRate => !currentRates.Any(currentRate => newRate.Code == currentRate.Code));
         }
 
-        private IEnumerable<ExchangeRate> GetUpdatedRates(IEnumerable<ExchangeRate> currentRates, IEnumerable<ExchangeRate> newRates)
+        private IEnumerable<ExchangeRate> GetUpdatedRates(IEnumerable<ExchangeRate> previousRates, IEnumerable<ExchangeRate> currentRates)
         {
-            if (!currentRates.Any())
+            if (!previousRates.Any())
                 return new List<ExchangeRate>();
 
             var changedRates = new List<ExchangeRate>();
-            var currentRateDict = currentRates.ToDictionary(x => x.Code.ToLower(), x => x.Value);
+            var previousRatesDictionary = previousRates.ToDictionary(x => x.Code.ToLower(), x => Decimal.Round(x.Value, 4));
 
-            foreach (var newRate in newRates)
+            foreach (var currentRate in currentRates)
             {
-                var rateFound = currentRateDict.TryGetValue(newRate.Code.ToLower(), out var currentRate);
-                if (rateFound && currentRate != newRate.Value)
+                var rateFound = previousRatesDictionary.TryGetValue(currentRate.Code.ToLower(), out var previousRate);
+                if (rateFound && previousRate != Decimal.Round(currentRate.Value, 4))
                 {
-                    changedRates.Add(newRate);
+                    changedRates.Add(currentRate);
                 }
             }
 
@@ -78,14 +73,12 @@ namespace ExchangeRates.Processor.Services
         /// </summary>
         /// <param name="rates"></param>
         /// <returns></returns>
-        public async Task SaveExchnageRatePollEvent(ExchangeRatesDto rates)
+        public async Task SaveExchangeRatePollEvent(ExchangeRateBatch rates)
         {
-            var ratesToSave = _mapper.MapToExchangeRateEvent(rates);
-            await _repo.SaveExchangeRateEvents(ratesToSave);
-
+            await _repo.SaveExchangeRateEvents(rates);
         }
 
-        public async Task UpdateMaterializedView(ChangedRates changedRates)
+        public async Task UpdateExchangeRates(ChangedRates changedRates)
         {
             if(changedRates.AddedRates.Any())
                 await _repo.AddNewRates(changedRates.AddedRates);
@@ -94,7 +87,7 @@ namespace ExchangeRates.Processor.Services
                 await _repo.UpdateRates(changedRates.UpdatedRates);
 
             if(changedRates.DeletedRates.Any())
-            await _repo.DeleteRates(changedRates.DeletedRates);
+                await _repo.DeleteRates(changedRates.DeletedRates);
         }
     }
 }
