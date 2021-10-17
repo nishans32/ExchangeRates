@@ -1,6 +1,5 @@
-﻿using System;
+﻿using ExchangeRates.Common.Models;
 using System.Collections.Generic;
-using System.Text;
 
 namespace ExchangeRates.Processor.Models
 {

@@ -1,4 +1,4 @@
-﻿namespace ExchangeRates.Importer.Repos
+﻿namespace ExchangeRates.Common.Repos
 {
     public class ConnectionStrings
     {

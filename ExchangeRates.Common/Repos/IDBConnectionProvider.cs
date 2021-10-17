@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Options;
+﻿using ExchangeRates.Common.Repos;
+using Microsoft.Extensions.Options;
 using Npgsql;
 using System.Data;
 using System.Threading.Tasks;

@@ -1,16 +1,17 @@
-﻿using ExchangeRates.Importer.Models;
+﻿using ExchangeRates.Common.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Dapper;
 using System;
+using ExchangeRates.Importer.Repos;
 
-namespace ExchangeRates.Processor.Repos
+namespace ExchangeRates.Common.Repos
 
 {
     public interface IExchangeRatesRepo
     {
         Task<IEnumerable<ExchangeRate>> GetRates();
-        Task SaveExchangeRateEvents(IEnumerable<ExchangeRateEvent> rates);
+        Task SaveExchangeRateEvents(ExchangeRateBatch batch);
         Task AddNewRates(IEnumerable<ExchangeRate> rates);
         Task DeleteRates(IEnumerable<ExchangeRate> rates);
         Task UpdateRates(IEnumerable<ExchangeRate> rates);
@@ -50,15 +51,15 @@ namespace ExchangeRates.Processor.Repos
             }
         }
 
-        public async Task SaveExchangeRateEvents(IEnumerable<ExchangeRateEvent> rates)
+        public async Task SaveExchangeRateEvents(ExchangeRateBatch batch)
         {
             var insertSql = @"INSERT INTO ExchangeRatesEventLog (batchId, Id, Code, Value, LastUpdatedUTC) 
                             VALUES(:batchId, :id, :code, :value, :lastUpdatedutc) ";
             using (var dbConnection = await _connectionProvider.CreateConnection())
             {
-                foreach (var rate in rates)
+                foreach (var rate in batch.Rates)
                 {
-                    await dbConnection.ExecuteAsync(insertSql, GetExchangeRateEventParamMap(rate));
+                    await dbConnection.ExecuteAsync(insertSql, GetExchangeRateEventParamMap(rate, batch.BatchId));
                 }
             }
         }
@@ -88,11 +89,11 @@ namespace ExchangeRates.Processor.Repos
             });
         }
 
-        private DynamicParameters GetExchangeRateEventParamMap(ExchangeRateEvent rate)
+        private DynamicParameters GetExchangeRateEventParamMap(ExchangeRate rate, Guid batchID)
         {
             return new DynamicParameters(new
             {
-                batchId = rate.BatchId,
+                batchId = batchID,
                 id = rate.Id,
                 code = rate.Code,
                 value = rate.Value,
@@ -102,7 +103,7 @@ namespace ExchangeRates.Processor.Repos
 
         public async Task UpdateRates(IEnumerable<ExchangeRate> rates)
         {
-            var udpateSql = @"UPDATE ExchangeRates set Value = :value, LastUpdatedUTC = :lastUpdatedutc";
+            var udpateSql = @"UPDATE ExchangeRates set Value = :value, LastUpdatedUTC = :lastUpdatedutc WHERE code =:code";
 
             using (var dbConnection = await _connectionProvider.CreateConnection())
             {

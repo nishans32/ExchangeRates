@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace ExchangeRates.Importer.Models
+namespace ExchangeRates.Common.Models
 {
     public class ExchangeRate
     {
@@ -10,6 +10,7 @@ namespace ExchangeRates.Importer.Models
         public string Code { get; set; }
         public decimal Value { get; set; }
         public DateTime LastUpdatedUtc { get; set; }
+        public string Name { get; set; }
     }
     public class ExchangeRateEvent
     {
